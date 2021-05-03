@@ -9,34 +9,81 @@ author:
   - Alumno.- Jesús Eduardo Uriegas Ibarra
 ---
 
-
-Primero es necesario obtener la [base de datos](https://cutt.ly/Gl9NLpX) en R:
+### Creación dataframe: journals
+Primero hay que cargar el dataset "Journals":
 ```{r}
-load("Datasets/wage1.RData")
+data("Journals")
 ```
-La información se guarda en un objeto llamado `data`.
-
-### 1. Determine el nivel educativo promedio de la muestra ¿Cuáles son los niveles de educación menor y mayor?
-El nivel educativo promedio de la muestra en años es:
+Ahora se guardan en otro dataframe las columnas subs y price, que serán los datos a analizar.
 ```{r}
-mean(data$educ)
+journals <- Journals[, c("subs", "price")]
 ```
 
-### 2. Determine el salario promedio por hora (wage) en la muestra. ¿Parece ser alto o bajo?
-El salario promedio por hora ($wage/hour$) es:
+Se crea una nueva columna(citeprice) en el dataframe antes creado (journals), que no es más que el precio por cita:
 ```{r}
-mean(data$wage)
-```
-De tratarse de dólares americanos y considerando que el salario mínimo por hora en Estados Unidos es de $7.25, entonces es un salario promedio por hora bajo.
-
-### 3. ¿Cuántas mujeres hay en la muestra?
-El número de mujeres se obtiene sumando los valores booleanos de la columna `female`:
-```{r}
-sum(data$female)
+journals$citeprice <- Journals$price/Journals$citations
 ```
 
-### 4. ¿Cuántos hombres hay en la muesta?
-Dado que no hay una columna que cuente el número de hombres, entonces se resta el número de mujeres del total de la muestra:
+Se obtiene un resúmen del journals:
 ```{r}
-length(data$female) - sum(data$female)
+summary(journals)
 ```
+
+### Graficación
+El siguiente chunk establece la relación logarítmica entre las suscripciones y el precio por cita.
+```{r}
+plot(log(subs) ~ log(citeprice), data = journals)
+jour_lm <- lm(log(subs) ~ log(citeprice), data = journals)
+abline(jour_lm)
+```
+La primer línea grafica los puntos x = log(citeprice) y y = log(subs). Mientras que la segunda línea aplica una regresión lineal por el método OLS creando así una línea (objeto tipo lm) que relaciona las 2 variables mencionadas.
+Por último, la tercer línea solamente dibuja jour_lm en la gráfica.
+
+### Objeto lm
+El objeto lm no es un concepto de programación para expresar un tipo de dato creado por el usuario, esto se comprueba mediante:
+```{r}
+class(jour_lm)
+```
+
+Lo cual retorna el tipo de clase, mientras que:
+```{r}
+names(jour_lm)
+```
+
+Retorna los atributos del objeto.
+También se puede obtener información detallada sobre los datos del objeto tipo lm, es decir: `jour_lm`:
+```{r}
+summary(jour_lm)
+```
+
+Como se observa la información sobre los coeficientes es relevante, esta  puede ser almacenada en otra variable de la siguiente forma:
+```{r}
+jour_slm <- summary(jour_lm)
+```
+
+Al observar que tipo de dato(objeto) es, se ve que es `summary.lm`, es decir, el resúmen de un lm:
+```{r}
+class(jour_slm)
+```
+
+La tabla de coeficientes que se mencionó se puede observar corriendo el siguiente código:
+```{r}
+jour_slm$coefficients
+```
+
+### Análisis de la varianza
+La función `anova()` genera un análisis de la varianza, como se observa:
+```{r}
+anova(jour_lm)
+```
+Los datos que genera este análisis son muy importantes, aquí los puntso más importantes:
+1. Se divide en 2 filas, la primera es la variable independiente (eje x) y la segunda la dependiente (eje y).
+2. Df indica los grados de libertad
+3. Sum sq la suma de los cuadrados, es decir, la variación entre el promedio de cada grupo y el promedio general.
+4. Mean sq es solo la división sum_sq/Df
+5. F-value es el test estadístico, que es la división Mean_sq(line1)/Mean_sq(line2).
+6. Es el p-value, quizá la columna más relevante, indica la relevancia estadística entre la correlación de la variable independiente y dependiente. En este caso es menor a 0.56, por lo que indica relevancia estadística.
+
+### Puntos y estimación de intervalos
+
+
