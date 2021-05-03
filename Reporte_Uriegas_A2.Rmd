@@ -9,9 +9,13 @@ author:
   - Alumno.- Jesús Eduardo Uriegas Ibarra
 ---
 
+# Regresión lineal simple
+
 ### Creación dataframe: journals
-Primero hay que cargar el dataset "Journals":
+Primero hay que cargar el dataset "Journals" junto con las librerias:
 ```{r}
+library("car")
+library("AER")
 data("Journals")
 ```
 Ahora se guardan en otro dataframe las columnas subs y price, que serán los datos a analizar.
@@ -76,14 +80,62 @@ La función `anova()` genera un análisis de la varianza, como se observa:
 ```{r}
 anova(jour_lm)
 ```
-Los datos que genera este análisis son muy importantes, aquí los puntso más importantes:
-1. Se divide en 2 filas, la primera es la variable independiente (eje x) y la segunda la dependiente (eje y).
-2. Df indica los grados de libertad
-3. Sum sq la suma de los cuadrados, es decir, la variación entre el promedio de cada grupo y el promedio general.
-4. Mean sq es solo la división sum_sq/Df
-5. F-value es el test estadístico, que es la división Mean_sq(line1)/Mean_sq(line2).
-6. Es el p-value, quizá la columna más relevante, indica la relevancia estadística entre la correlación de la variable independiente y dependiente. En este caso es menor a 0.56, por lo que indica relevancia estadística.
+Los datos que genera este análisis son muy importantes, aquí los puntso más importantes:  
+* Se divide en 2 filas, la primera es la variable independiente (eje x) y la segunda la dependiente (eje y).  
+* Df indica los grados de libertad.  
+* Sum sq la suma de los cuadrados, es decir, la variación entre el promedio de cada grupo y el promedio general.  
+* Mean sq es solo la división sum_sq/Df  
+* F-value es el test estadístico, que es la división Mean_sq(line1)/Mean_sq(line2). 
+* Es el p-value, quizá la columna más relevante, indica la relevancia estadística entre la correlación de la variable independiente y dependiente. En este caso es menor a 0.56, por lo que indica relevancia estadística.  
 
 ### Puntos y estimación de intervalos
+Para obtener el coeficiente de regresión $\beta$, se aplica:
+```{r}
+coef(jour_lm)
+```
+Aunque se trata de un estimado del coeficiente $\beta$ para las 2 varaibles de la analizadas.
 
+Para obtener un nivel de confianza de las varaibles se utiliza la función `confint()` como en el ejemplo:
+```{r}
+confint(jour_lm, level = 0.95)
+```
+### Predicciones
+Una vez se tiene el modelo, este se suele utilizar para realizar predicciones de futuros datos. Las predicciones son del tipo: dado los datos observados y el modelo de regresión lineal, ¿cuál será el proximo dato observado dada la variable x?  
+En este caso se busca qué dato se obtendria dada la variable `citeprice = 2.11`, para ello se utiliza la función `predict()`, la cual tiene 2 tipos de predicciones:
+```{r}
+predict(jour_lm, newdata = data.frame(citeprice = 2.11), interval = "confidence")
+```
+```{r}
+predict(jour_lm, newdata = data.frame(citeprice = 2.11), interval = "predict")
+```
+La salida es una tabla que indica el límite superior e inferior entre los que se puede encontrar el dato a observar cuando el `citeprice` sea 2.11, esto basado en las tablas de distribución t.
 
+Como se puede intuir del análisis anterior, es posible obtener todo un rango de posibles valores en y dados una serie de valores en x, para ello se genera primero la secuencia de valores en x: `lciteprice` y continuación un data frame que contenga las predicciones de datos en dicho rango de valores dado el modelo de regresión lineal, esto es lo que se hace en las siguientes lineas:
+```{r}
+lciteprice <- seq(from = -6, to = 4, by = 0.25)
+jour_pred <- predict(jour_lm, interval = "prediction", newdata = data.frame(citeprice = exp(lciteprice)))
+```
+Ahora sería más útil graficar la predicción, los datos y el modelo de regresión, para ello:
+```{r}
+plot(log(subs) ~ log(citeprice), data = journals)
+lines(jour_pred[, 1] ~ lciteprice, col = 1)
+lines(jour_pred[, 2] ~ lciteprice, col = 1, lty = 2)
+lines(jour_pred[, 3] ~ lciteprice, col = 1, lty = 2)
+```
+La primer línea grafica los datos, tal como se hizo al principio de este documento, posteriormente se llama a la función `lines` que como su nombre lo dice grafica lineas, y se pasa como parametros los 3 valores de la predicción (intervalo menor, mayor y el modelo de regresión).
+
+### Graficación de un objeto lm
+La función `plot` puede generar 6 gráficas de un objeto lm, aunque por defectuo grafica 4, el siguiente código muestra estas 4 gráficas en una sola imagen:
+```{r}
+par(mfrow = c(2, 2))
+plot(jour_lm)
+par(mfrow = c(1, 1))
+```
+Las gráficas suelen ser utilizadas para el análisis de residuos, aunque aquí no se ahondará en su significado.
+
+### Probar hipótesis lineal
+La función `linearHypothesis()` evalua una hipótesis en un modelo de regresión lineal(objeto lm), de forma que para el caso analizado esto sería:
+```{r}
+linearHypothesis(jour_lm, "log(citeprice) = -0.5")
+```
+La hipótesis se interpreta como buscar la probabilidad de que la elasticidad del precio por cita es igual a -0.5, el dato más importante en este caso es el valor de p (última columna), que en este caso es de 0.3546, lo cual indica que la hipótesis tiene significancia estadística, o en otras palabras, la elasticidad se encuentra cerca de -0.5.
