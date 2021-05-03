@@ -1,8 +1,8 @@
 ---
 title: "Actividad 2"
-output: html_document
-#  md_document:
-#    variant: markdown_github
+output: #html_document
+  md_document:
+    variant: markdown_github
 
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 author:
